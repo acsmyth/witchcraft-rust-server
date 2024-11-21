@@ -61,16 +61,20 @@ pub async fn init() -> Result<(), Error> {
 }
 
 pub fn connect() -> Result<minidumper::Client, Error> {
-    for _ in 0..50 {
+    for attempt in 0..1000 {
         match minidumper::Client::with_name(Path::new(SOCKET_ADDR)) {
             Ok(client) => return Ok(client),
-            Err(e) => debug!(
-                "error opening minidump client",
-                error: Error::internal_safe(e)
-            ),
+            Err(e) => {
+                if attempt >= 20 && attempt % 20 == 0 {
+                    debug!(
+                        "error opening minidump client",
+                        error: Error::internal_safe(e)
+                    );
+                }
+            }
         }
 
-        thread::sleep(Duration::from_millis(100));
+        thread::sleep(Duration::from_millis(5));
     }
 
     Err(Error::internal_safe("unable to connect to minidump server"))
