@@ -295,6 +295,7 @@ use conjure_http::server::{AsyncService, ConjureRuntime};
 use conjure_runtime::{Agent, ClientFactory, HostMetricsRegistry, UserAgent};
 use debug::endpoint::DebugResource;
 use debug::endpoint::DebugServiceEndpoints;
+use futures::FutureExt;
 use futures_util::{stream, Stream, StreamExt};
 use refreshable::Refreshable;
 use serde::de::DeserializeOwned;
@@ -327,6 +328,7 @@ use crate::debug::thread_dump::ThreadDumpDiagnostic;
 use crate::debug::DiagnosticRegistry;
 use crate::health::config_reload::ConfigReloadHealthCheck;
 use crate::health::endpoint_500s::Endpoint500sHealthCheck;
+use crate::health::minidump::MinidumpHealthCheck;
 use crate::health::panics::PanicsHealthCheck;
 use crate::health::service_dependency::ServiceDependencyHealthCheck;
 use crate::health::HealthCheckRegistry;
@@ -443,7 +445,11 @@ where
 
     info!("server starting");
 
-    handle.block_on(minidump::init())?;
+    let minidump_ok = Arc::new(AtomicBool::new(false));
+    let minidump_ok_cloned = minidump_ok.clone();
+    handle.spawn(minidump::init().then(|result| async move {
+        minidump_ok_cloned.store(result.is_ok(), Ordering::Relaxed);
+    }));
 
     metrics::init(&metrics);
 
@@ -453,6 +459,7 @@ where
     health_checks.register(ServiceDependencyHealthCheck::new(&host_metrics));
     health_checks.register(PanicsHealthCheck::new());
     health_checks.register(ConfigReloadHealthCheck::new(runtime_config_ok));
+    health_checks.register(MinidumpHealthCheck::new(minidump_ok));
 
     let readiness_checks = Arc::new(ReadinessCheckRegistry::new());
 
