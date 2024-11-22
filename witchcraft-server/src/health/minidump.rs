@@ -30,7 +30,7 @@ impl HealthCheck for MinidumpHealthCheck {
 
         HealthCheckResult::builder()
             .state(state)
-            .message("minidump client has not connected to server")
+            .message("minidump client has not connected to server".to_string())
             .build()
     }
 }

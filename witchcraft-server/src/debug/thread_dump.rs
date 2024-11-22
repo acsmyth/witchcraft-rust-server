@@ -47,15 +47,16 @@ impl Diagnostic for ThreadDumpDiagnostic {
 
     fn result(&self) -> Result<Bytes, Error> {
         let target_file = NamedTempFile::new_in("var/data/tmp").map_err(Error::internal_safe)?;
+        let handle = Handle::current();
 
-        let client = minidump::connect()?;
+        let client = handle.block_on(minidump::connect())?;
         client
             .send_message(0, target_file.path().as_os_str().as_bytes())
             .map_err(Error::internal_safe)?;
         // send_message doesn't wait for a response, so send a ping after to synchronize
         client.ping().map_err(Error::internal_safe)?;
 
-        let info = Handle::current().block_on(log::process_minidump(target_file.path()))?;
+        let info = handle.block_on(log::process_minidump(target_file.path()))?;
 
         Ok(Bytes::from(info))
     }
