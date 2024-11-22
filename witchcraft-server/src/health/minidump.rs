@@ -28,6 +28,9 @@ impl HealthCheck for MinidumpHealthCheck {
             HealthState::Error
         };
 
-        HealthCheckResult::builder().state(state).build()
+        HealthCheckResult::builder()
+            .state(state)
+            .message("minidump client has not connected to server")
+            .build()
     }
 }
