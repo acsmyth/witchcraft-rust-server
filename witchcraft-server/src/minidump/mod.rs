@@ -61,20 +61,30 @@ pub async fn init() -> Result<(), Error> {
 }
 
 pub fn connect() -> Result<minidumper::Client, Error> {
-    for attempt in 0..1000 {
+    let mut socket_exists = false;
+    for _ in 0..1000 {
+        if Path::new(SOCKET_ADDR).exists() {
+            socket_exists = true;
+            break;
+        }
+        thread::sleep(Duration::from_millis(5));
+    }
+    if !socket_exists {
+        return Err(Error::internal_safe("minidump server socket not found"));
+    }
+
+    for _ in 0..500 {
         match minidumper::Client::with_name(Path::new(SOCKET_ADDR)) {
             Ok(client) => return Ok(client),
             Err(e) => {
-                if attempt >= 20 && attempt % 20 == 0 {
-                    debug!(
-                        "error opening minidump client",
-                        error: Error::internal_safe(e)
-                    );
-                }
+                debug!(
+                    "error opening minidump client",
+                    error: Error::internal_safe(e)
+                );
             }
         }
 
-        thread::sleep(Duration::from_millis(5));
+        thread::sleep(Duration::from_millis(10));
     }
 
     Err(Error::internal_safe("unable to connect to minidump server"))
