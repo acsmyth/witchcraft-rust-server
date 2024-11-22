@@ -22,15 +22,15 @@ impl HealthCheck for MinidumpHealthCheck {
     }
 
     fn result(&self) -> HealthCheckResult {
-        let state = if self.minidump_ok.load(Ordering::Relaxed) {
-            HealthState::Healthy
+        if self.minidump_ok.load(Ordering::Relaxed) {
+            HealthCheckResult::builder()
+                .state(HealthState::Healthy)
+                .build()
         } else {
-            HealthState::Error
-        };
-
-        HealthCheckResult::builder()
-            .state(state)
-            .message("minidump client has not connected to server".to_string())
-            .build()
+            HealthCheckResult::builder()
+                .state(HealthState::Error)
+                .message("minidump client has not connected to server".to_string())
+                .build()
+        }
     }
 }
