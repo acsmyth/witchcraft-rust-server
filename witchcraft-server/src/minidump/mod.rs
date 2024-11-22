@@ -61,19 +61,7 @@ pub async fn init() -> Result<(), Error> {
 }
 
 pub async fn connect() -> Result<minidumper::Client, Error> {
-    let mut socket_exists = false;
-    for _ in 0..1000 {
-        if tokio::fs::metadata(SOCKET_ADDR).await.is_ok() {
-            socket_exists = true;
-            break;
-        }
-        tokio::time::sleep(Duration::from_millis(5)).await;
-    }
-    if !socket_exists {
-        return Err(Error::internal_safe("minidump server socket not found"));
-    }
-
-    for _ in 0..500 {
+    for _ in 0..50 {
         match tokio::task::spawn_blocking(|| minidumper::Client::with_name(Path::new(SOCKET_ADDR)))
             .await
             .unwrap()
@@ -86,7 +74,7 @@ pub async fn connect() -> Result<minidumper::Client, Error> {
                 );
             }
         }
-        tokio::time::sleep(Duration::from_millis(10)).await;
+        tokio::time::sleep(Duration::from_millis(100)).await;
     }
 
     Err(Error::internal_safe("unable to connect to minidump server"))
