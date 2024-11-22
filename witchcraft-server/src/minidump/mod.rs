@@ -61,7 +61,7 @@ pub async fn init() -> Result<(), Error> {
 }
 
 pub async fn connect() -> Result<minidumper::Client, Error> {
-    for _ in 0..50 {
+    for _ in 0..200 {
         match tokio::task::spawn_blocking(|| minidumper::Client::with_name(Path::new(SOCKET_ADDR)))
             .await
             .unwrap()
@@ -74,7 +74,7 @@ pub async fn connect() -> Result<minidumper::Client, Error> {
                 );
             }
         }
-        tokio::time::sleep(Duration::from_millis(100)).await;
+        tokio::time::sleep(Duration::from_millis(25)).await;
     }
 
     Err(Error::internal_safe("unable to connect to minidump server"))
