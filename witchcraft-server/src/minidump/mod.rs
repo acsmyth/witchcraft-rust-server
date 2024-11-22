@@ -67,13 +67,12 @@ pub async fn connect() -> Result<minidumper::Client, Error> {
             .unwrap()
         {
             Ok(client) => return Ok(client),
-            Err(e) => {
-                debug!(
-                    "error opening minidump client",
-                    error: Error::internal_safe(e)
-                );
-            }
+            Err(e) => debug!(
+                "error opening minidump client",
+                error: Error::internal_safe(e)
+            ),
         }
+
         tokio::time::sleep(Duration::from_millis(25)).await;
     }
 
