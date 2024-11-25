@@ -304,7 +304,7 @@ use status::StatusServiceEndpoints;
 use tokio::runtime::{Handle, Runtime};
 use tokio::signal::unix::{self, SignalKind};
 use tokio::{pin, runtime, select, time};
-use witchcraft_log::{fatal, info};
+use witchcraft_log::{error, fatal, info};
 use witchcraft_metrics::MetricRegistry;
 
 pub use body::{RequestBody, ResponseWriter};
@@ -449,6 +449,9 @@ where
     let minidump_ok_cloned = minidump_ok.clone();
     handle.spawn(minidump::init().then(|result| async move {
         minidump_ok_cloned.store(result.is_ok(), Ordering::Relaxed);
+        if let Err(e) = result {
+            error!("error during minidump init", error: e)
+        }
     }));
 
     metrics::init(&metrics);
